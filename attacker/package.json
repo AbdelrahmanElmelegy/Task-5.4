@@ -1,0 +1,13 @@
+{
+  "name": "csrf-dos-attacker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A malicious site that forges a request against, and floods, the Dorm Booking app",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

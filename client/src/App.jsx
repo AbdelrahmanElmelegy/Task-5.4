@@ -3,6 +3,7 @@ import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Bookings from './pages/Bookings.jsx'
 import BookingForm from './pages/BookingForm.jsx'
+import Maintenance from './pages/Maintenance.jsx'
 import { useAuth } from './hooks/useAuth.js'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 
@@ -15,6 +16,7 @@ export default function App() {
           <Link to="/" className="font-semibold">Dorm Room Booking</Link>
           <Link to="/bookings" className="text-sm">Bookings</Link>
           {user && <Link to="/bookings/new" className="text-sm">Book a Room</Link>}
+          <Link to="/maintenance" className="text-sm">Maintenance</Link>
         </div>
         <div className="flex items-center gap-2">
           {!user ? (
@@ -42,6 +44,7 @@ export default function App() {
         <Route path="/bookings/:id" element={
           <ProtectedRoute><BookingForm /></ProtectedRoute>
         } />
+        <Route path="/maintenance" element={<Maintenance />} />
         <Route path="*" element={<div>Not Found</div>} />
       </Routes>
     </div>

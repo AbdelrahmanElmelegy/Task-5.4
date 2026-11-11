@@ -1,12 +1,18 @@
-# Task 3 (Variant): Dorm Room Booking — with Authentication
+# Task 5.4: Dorm Room Booking — CSRF & DoS (Vulnerable)
 
-Task 1's Dorm Room Booking API with JWT login/register on the server and a
-React client with a login flow.
+This builds on the Dorm Room Booking app (JWT auth, React client) and adds a new
+**Maintenance Requests** feature that is **deliberately vulnerable** to two attacks:
+
+1. **CSRF (Cross-Site Request Forgery)** — state-changing requests are trusted on the
+   strength of the auth cookie alone.
+2. **DoS (Denial of Service)** — no rate limiting, so the endpoints can be flooded.
+
+Your job is to fix both. The `Task-5.4-solution/` sibling project shows one correct answer.
 
 ## Running it
 
 ```
-npm run install:all   # installs server/ and client/ (npm workspaces)
+npm install           # installs server/ + client/ (npm workspaces) + test tooling
 npm run dev           # API on :4000, client on :5175
 ```
 
@@ -14,86 +20,58 @@ Create `server/.env` yourself with:
 
 ```
 PORT=4000
-MONGO_URI=mongodb://tasks:pass1234@ac-j3acrgb-shard-00-00.lueesfz.mongodb.net:27017,ac-j3acrgb-shard-00-01.lueesfz.mongodb.net:27017,ac-j3acrgb-shard-00-02.lueesfz.mongodb.net:27017/?ssl=true&replicaSet=atlas-6to6iy-shard-0&authSource=admin&appName=Cluster0
-JWT_SECRET=change-me
+MONGO_URI=<your MongoDB connection string>
+JWT_SECRET=<any long random string>
 JWT_EXPIRES_IN=7d
 ```
 
-`JWT_SECRET` is the key the server signs and verifies login tokens with —
-anyone who knows it can forge a token for any user, so replace `change-me`
-with a long random value. Generate one with:
+Generate a secret with:
 
 ```
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Paste the output after `JWT_SECRET=` and restart the server. Changing the
-secret logs everyone out, because tokens signed with the old one stop being
-valid.
+## Authentication: a JWT in an httpOnly cookie
 
-## What was added on top of Task 1
+Unlike the earlier variants (which sent the JWT in an `Authorization: Bearer` header and
+kept it in `localStorage`), this app stores the JWT in an **httpOnly cookie**:
 
-### Server
-- `POST /api/auth/register`, `POST /api/auth/login` → `{ token, user }`;
-  `GET /api/auth/me` (requires token).
-- `middleware/auth.js` — `requireAuth` reads `Authorization: Bearer <token>`,
-  verifies it with `JWT_SECRET` and sets `req.user = { id, name }`.
-- `User.comparePassword()`; the `password` field stores the bcrypt hash.
-- Bookings: reading (`GET /`, `GET /:id`) stays public. Creating, editing and
-  cancelling require a token. `bookedBy` is set from `req.user.id` (sending
-  it in the body is rejected), and only the person who made a booking can
-  edit or cancel it (`403` otherwise). The room-conflict check from Task 1
-  still applies (`409`). Bookings are populated with the booker's
-  `name`/`email`.
-- Users: `POST /api/users` was removed (use `/api/auth/register`);
-  `PATCH`/`DELETE /api/users/:id` require a token and only work on your own
-  account.
+- `POST /api/auth/register` and `POST /api/auth/login` set a `token` cookie and return
+  `{ user }` (no token in the body); `POST /api/auth/logout` clears it; `GET /api/auth/me`
+  reads the session from the cookie.
+- `middleware/auth.js` reads the JWT from `req.cookies.token`.
+- The client's `api.js` uses `withCredentials: true`; there is no token in `localStorage`.
 
-### Client (`client/`, Vite + React + Tailwind)
-- `AuthContext` stores the token in `localStorage`, restores the session via
-  `/auth/me`, and `api.js` attaches the token to every request.
-- Pages: Login, Register, Bookings (list, edit/cancel on your own bookings).
-  BookingForm is left for you — see below.
+An httpOnly cookie is good against XSS token theft — but the browser attaches it
+**automatically** to every request to the API, including requests triggered by another
+website. That is the precondition for CSRF.
 
-## Your task — the Book a Room page
+## Maintenance Requests (the new feature)
 
-Everything above is already working. Your job is the frontend of booking a
-room: `client/src/pages/BookingForm.jsx`. It is already routed at
-`/bookings/new` and `/bookings/:id`, both behind `ProtectedRoute`, and the
-"Book a Room" nav link and the "Edit" buttons already point to it.
+- Model `MaintenanceRequest` — `roomNumber`, `category` (`plumbing|electrical|furniture|other`),
+  `description`, `status`, `author` (→ `User`).
+- `GET /api/maintenance`, `GET /api/maintenance/:id` — public.
+- `POST /api/maintenance` — logged-in users file a request (`author` taken from the cookie).
+- `PATCH`/`DELETE /api/maintenance/:id` — own requests only (`403` otherwise).
+- Client page at `/maintenance` (list + submit form).
 
-This is roughly what the finished page should look like (filled in with example values):
+## Simulating the attack
 
-![Finished page](docs/book-a-room.png)
+See **[Flow.md](./Flow.md)** for a full walkthrough: become the victim, run the `attacker/`
+site, and watch a forged maintenance request get filed in your name (CSRF) and the API get
+flooded (DoS).
 
-### TODO 1 — the form
-Render inputs bound to the `form` state:
-- `roomNumber` — text input (e.g. `B2-104`)
-- `startDate` — date input (`type="date"`)
-- `endDate` — date input (`type="date"`)
-- `purpose` — textarea (optional)
+## Your task
 
-Implement `onChange` so every input updates `form`.
+Make the Maintenance feature secure **without breaking legitimate use**:
 
-### TODO 2 — booking a room
-In `onSubmit`, send `POST /api/bookings` with
-`{ roomNumber, startDate, endDate, purpose }` using the `api` instance from
-`client/src/api.js` (it already attaches your token). On success, navigate
-back to `/bookings`. On failure, show the server's `message` in the `error`
-box — try it: an end date before the start date returns `400`, and booking a
-room that is already taken for an overlapping range returns `409`.
+- **CSRF:** require a secret, per-session anti-CSRF token on every state-changing request —
+  a value an attacker's site can neither read nor guess. Use the **`csrf-csrf`** package
+  (double-submit-cookie pattern). Remember: `SameSite` and CORS are *not* substitutes for a
+  real token (see Flow.md for why).
+- **DoS:** throttle the feature so one client cannot flood it. Use the **`express-rate-limit`**
+  package to return `429 Too Many Requests` past a sensible limit.
 
-Do **not** send `bookedBy` — the server takes the booker from your token and
-rejects the request if you send it.
-
-### TODO 3 — editing a booking
-When the URL has an `id`, load the booking with `GET /api/bookings/:id` and
-fill the form with its `roomNumber`, `startDate`, `endDate` and `purpose`.
-Watch out: the server sends dates as full ISO strings
-(`2026-10-10T00:00:00.000Z`), but a date input only accepts `YYYY-MM-DD`.
-On submit, send `PATCH /api/bookings/:id` instead of `POST`. Editing someone
-else's booking returns `403` — show that message too.
-
-You're expected to use AI tools while building this. But you should be able
-to explain, for any line in your component, *why* it's there and what
-happens if you delete it. We will ask.
+> A jest test suite ships with this task. From the project root, run `npm install` then
+> `npm test`. The tests encode the secure behavior, so they **fail now and pass once your fix
+> is applied** — use them to verify your work. (CI runs the same suite on every push.)

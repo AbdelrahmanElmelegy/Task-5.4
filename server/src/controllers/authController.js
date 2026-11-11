@@ -3,6 +3,21 @@ import bcrypt from 'bcryptjs';
 import Joi from 'joi';
 import { User } from '../models/User.js';
 
+// How long the auth cookie lives, in ms (mirrors JWT_EXPIRES_IN's default of 7d).
+const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+// The session token is stored in an httpOnly cookie so client JS can never read
+// it (good against XSS token theft) — but the browser sends it automatically,
+// which is the precondition for CSRF.
+function setAuthCookie(res, token) {
+  res.cookie('token', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false, // true in production (HTTPS only)
+    maxAge: COOKIE_MAX_AGE
+  });
+}
+
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(60).required(),
   email: Joi.string().email().required(),
@@ -21,7 +36,8 @@ export async function register(req, res, next) {
     const password = await bcrypt.hash(value.password, 10);
     const user = await User.create({ name: value.name, email: value.email, password });
     const token = signToken(user);
-    res.status(201).json({ token, user: publicUser(user) });
+    setAuthCookie(res, token);
+    res.status(201).json({ user: publicUser(user) });
   } catch (err) { next(err); }
 }
 
@@ -43,8 +59,15 @@ export async function login(req, res, next) {
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = signToken(user);
-    res.json({ token, user: publicUser(user) });
+    setAuthCookie(res, token);
+    res.json({ user: publicUser(user) });
   } catch (err) { next(err); }
+}
+
+// POST /api/auth/logout
+export async function logout(req, res) {
+  res.clearCookie('token');
+  res.json({ ok: true });
 }
 
 // GET /api/auth/me
