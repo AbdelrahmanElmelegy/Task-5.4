@@ -1,0 +1,23 @@
+{
+  "name": "task-3-dormbooking",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "install:all": "npm --workspaces install",
+    "dev": "concurrently -n server,client -c blue,magenta \"npm:dev --workspace server\" \"npm:dev --workspace client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "jest": "^30.5.2",
+    "mongodb-memory-server": "^11.3.0"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "mongodb-memory-server@11.3.0": true
+  }
+}
