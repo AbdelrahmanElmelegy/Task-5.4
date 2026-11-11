@@ -19,10 +19,14 @@ yarn-error.log*
 # OS and Editor specific files
 .DS_Store
 Thumbs.db
-.vscode/
 .idea/
 *.swp
 *.swo
+
+CLAUDE.md
+AGENTS.md
+CLAUDE.md.bak
+AGENTS.md.bak
 
 
 # Server-side specific ignores (if server is in a subfolder)

@@ -1,0 +1,137 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+
+        {
+            "label": "Generate GitHub CI YAML",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                ".vscode/setupCI.js"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            // "dependsOn": "Install Dependencies",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "never",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false,
+                "close": true
+            }
+        },
+
+        {
+            "label": "Generate Jest Config",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                ".vscode/setupJestConfig.js"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "dependsOn": "Generate GitHub CI YAML",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "never",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false,
+                "close": true
+            }
+        },
+
+        {
+            "label": "Generate Babel Config",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                ".vscode/setupBabelConfig.js"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            // "dependsOn": "Install Dependencies",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "never",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false,
+                "close": true
+            }
+        },
+
+        {
+            "label": "Generate Server CSRF Test",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                ".vscode/setupServerCSRFTest.js"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            // "dependsOn": "Install Dependencies",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "never",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false,
+                "close": true
+            }
+        },
+
+        {
+            "label": "Generate Server DoS Test",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                ".vscode/setupServerDoSTest.js"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            // "dependsOn": "Install Dependencies",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "never",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false,
+                "close": true
+            }
+        },
+
+        {
+            "label": "Generate Client Test",
+            "type": "shell",
+            "command": "node",
+            "args": [
+                ".vscode/setupClientTest.js"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            // "dependsOn": "Install Dependencies",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "never",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false,
+                "close": true
+            }
+        }
+    ]
+}

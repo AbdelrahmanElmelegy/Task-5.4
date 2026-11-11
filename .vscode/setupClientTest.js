@@ -1,4 +1,9 @@
-import { api } from '../../client/src/api.js';
+import fs from 'fs';
+import path from 'path';
+
+const clientTestPath = path.join(process.cwd(), 'tests', 'client', 'csrf.test.js');
+
+const clientTestContent = `import { api } from '../../client/src/api.js';
 
 // Read a header value whether axios stored it as a plain object or an AxiosHeaders.
 function getHeader(headers, name) {
@@ -38,3 +43,9 @@ describe('client api CSRF behavior', () => {
     expect(getHeader(sent.headers, 'x-csrf-token')).toBe('test-token');
   });
 });
+`;
+
+if (!fs.existsSync(clientTestPath)) {
+  fs.mkdirSync(path.dirname(clientTestPath), { recursive: true });
+  fs.writeFileSync(clientTestPath, clientTestContent, { encoding: 'utf8' });
+}
