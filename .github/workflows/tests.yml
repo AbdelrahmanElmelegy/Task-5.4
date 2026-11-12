@@ -1,0 +1,41 @@
+name: ACL Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    env:
+      MONGOMS_VERSION: 7.0.14
+      CI: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-7.0.14-linux
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download MongoDB binary
+        run: |
+          node -e "const { MongoMemoryServer } = require('mongodb-memory-server'); (async () => { const db = await MongoMemoryServer.create(); await db.stop(); })().catch(err => { console.error(err); process.exit(1); });"
+
+      - name: Run Jest tests
+        run: npm test -- --runInBand
