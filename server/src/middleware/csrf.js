@@ -1,7 +1,9 @@
 import { doubleCsrf } from "csrf-csrf";
 
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
+const { generateCsrfToken: generateToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || process.env.JWT_SECRET,
+
+  getSessionIdentifier: (req) => req.cookies?.token || req.ip || "anonymous",
 
   cookieName: "csrf-token",
 
@@ -12,7 +14,7 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
     path: "/",
   },
 
-  getTokenFromRequest: (req) => req.headers["x-csrf-token"],
+  getCsrfTokenFromRequest: (req) => req.headers["x-csrf-token"],
 });
 
 export { generateToken, doubleCsrfProtection };
